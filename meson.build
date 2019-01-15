@@ -81,7 +81,7 @@ foreach v: variants
 
   echo = executable('echo-' + name, 'tests/echo.c', link_with: lib)
 
-  foreach v, i: { 'IPv4': '127.0.0.1', 'IPv6': '::1' }
+  foreach v, i: { 'IPv4': '127.0.0.1'} #, 'IPv6': '::1' }
     tests = {
       'TCP PSK': ['-u', 'foo', '-k', '7df28f5439b5a051cc138b6e12128264', '-T', i],
     }

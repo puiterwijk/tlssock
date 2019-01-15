@@ -1,7 +1,7 @@
 /* vim: set tabstop=8 shiftwidth=2 softtabstop=2 expandtab smarttab colorcolumn=80: */
 /*
  * Copyright 2018 Red Hat, Inc.
- * 
+ *
  * Author: Nathaniel McCallum
  *
  * This library is free software; you can redistribute it and/or
@@ -21,13 +21,23 @@
 
 #pragma once
 
+#include <linux/types.h>
+#include <bits/posix1_lim.h>
+#include <bits/sockaddr.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <unistd.h>
 
+#define AF_DNS 253
 #define IPPROTO_TLS 253
 #define TLS_CLT_HANDSHAKE 1
 #define TLS_SRV_HANDSHAKE 2
+
+struct sockaddr_dns {
+  sa_family_t sdns_family;
+  __be16 sdns_port;                             /* Port number                  */
+  char sdns_hostname[_POSIX_HOST_NAME_MAX+1];  /* NULL-terminated */
+};
 
 typedef struct {
   void *misc;

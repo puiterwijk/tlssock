@@ -27,6 +27,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
+#include <netdb.h>
+#include <arpa/inet.h>
 
 static inline bool
 is_tls(int fd, int errnum)
@@ -134,6 +136,55 @@ accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags)
   }
 
   return fd;
+}
+
+int
+connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
+{
+  struct sockaddr *connect_addr = (struct sockaddr *)addr;
+  socklen_t connect_addrlen = addrlen;
+
+  if (addr->sa_family == AF_DNS) {
+    /* Translate DNS to IP, store hostname and update addr */
+    /* TODO: Store the hostname in tls socket options */
+    const struct sockaddr_dns *dnsname = (const struct sockaddr_dns *)addr;
+    struct hostent *he;
+    struct in_addr **addr_list;
+    struct sockaddr_in ip_addr;
+
+    if ((he = gethostbyname(dnsname->sdns_hostname)) == NULL)
+    {
+      errno = EADDRNOTAVAIL;
+      return -1;
+    }
+    addr_list = (struct in_addr **)he->h_addr_list;
+    bool found_ip = false;
+    for (int i = 0; addr_list[i]; i++) {
+      char *ip = inet_ntoa(*addr_list[i]);
+
+      /* TODO: Make sure we only get the IP address for the selected AF and ignore others */
+      int res = inet_pton(AF_INET, ip, &ip_addr.sin_addr);
+      if (res != 1) {
+        errno = EFAULT;
+        return 1;
+      }
+
+      ip_addr.sin_family = AF_INET;
+      ip_addr.sin_port = dnsname->sdns_port;
+
+      connect_addr = (struct sockaddr *)&ip_addr;
+      connect_addrlen = sizeof(ip_addr);
+
+      found_ip = true;
+
+      break;
+    }
+    if(!found_ip) {
+      errno = ENETUNREACH;
+      return -1;
+    }
+  }
+  return NEXT(connect)(sockfd, connect_addr, connect_addrlen);
 }
 
 int

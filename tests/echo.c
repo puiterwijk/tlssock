@@ -205,7 +205,13 @@ main(int argc, char *argv[])
     fd = socket(addr.addr.sa_family, SOCK_STREAM, IPPROTO_TLS);
     assert(fd >= 0);
 
-    assert(connect(fd, &addr.addr, addrlen(&addr)) == 0);
+    struct sockaddr_dns dnsaddr;
+    dnsaddr.sdns_family = AF_DNS;
+    dnsaddr.sdns_port = addr.in.sin_port;
+    memcpy(dnsaddr.sdns_hostname, "localhost", strlen("localhost")+1);
+
+    //assert(connect(fd, &addr.addr, addrlen(&addr)) == 0);
+    assert(connect(fd, (struct sockaddr *) &dnsaddr, sizeof(struct sockaddr_dns)) == 0);
 
     if (psku && pskk) {
       clt.psk = clt_cb;
